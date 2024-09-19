@@ -1,49 +1,33 @@
-
+volumes:
+  nextcloud:
+  db:
 
 services:
   db:
-    image: mariadb:10.6
+    image: mariadb:10.5
+    restart: always
     command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
-    restart: always
     volumes:
-      - db:/var/lib/mysql:Z
+      - db:/var/lib/mysql
     environment:
-      - MYSQL_ROOT_PASSWORD="krosvoun"
-      - MARIADB_AUTO_UPGRADE=1
-      - MARIADB_DISABLE_UPGRADE_BACKUP=1
-    env_file:
-      - db.env
-
-  redis:
-    image: redis:alpine
-    restart: always
+      - MYSQL_ROOT_PASSWORD=krosvoun
+      - MYSQL_PASSWORD=krosvoun
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
 
   app:
-    image: nextcloud:apache
+    image: nextcloud:29
     restart: always
     ports:
-      - 127.0.0.1:8080:80
+      - 8080:80
+    links:
+      - db
     volumes:
-      - nextcloud:/var/www/html:z
+      - nextcloud:/var/www/html
+      - ./data:/var/www/html/data
+      - ./config:/var/www/html/config
     environment:
+      - MYSQL_PASSWORD=krosvoun
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
       - MYSQL_HOST=db
-      - REDIS_HOST=redis
-    env_file:
-      - db.env
-    depends_on:
-      - db
-      - redis
-
-  cron:
-    image: nextcloud:apache
-    restart: always
-    volumes:
-      - nextcloud:/var/www/html:z
-    entrypoint: /cron.sh
-    depends_on:
-      - db
-      - redis
-
-volumes:
-  db:
-  nextcloud:
